@@ -47,36 +47,38 @@ from gnuradio import qtgui
 
 class AIS(gr.top_block, Qt.QWidget):
 
-    def __init__(self):
+    def __init__(self, doGUI=False):
+        self.doGUI = doGUI
         gr.top_block.__init__(self, "AIS receiver")
-        Qt.QWidget.__init__(self)
-        self.setWindowTitle("AIS receiver")
-        qtgui.util.check_set_qss()
-        try:
-            self.setWindowIcon(Qt.QIcon.fromTheme('gnuradio-grc'))
-        except:
-            pass
-        self.top_scroll_layout = Qt.QVBoxLayout()
-        self.setLayout(self.top_scroll_layout)
-        self.top_scroll = Qt.QScrollArea()
-        self.top_scroll.setFrameStyle(Qt.QFrame.NoFrame)
-        self.top_scroll_layout.addWidget(self.top_scroll)
-        self.top_scroll.setWidgetResizable(True)
-        self.top_widget = Qt.QWidget()
-        self.top_scroll.setWidget(self.top_widget)
-        self.top_layout = Qt.QVBoxLayout(self.top_widget)
-        self.top_grid_layout = Qt.QGridLayout()
-        self.top_layout.addLayout(self.top_grid_layout)
+        if doGUI:
+            Qt.QWidget.__init__(self)
+            self.setWindowTitle("AIS receiver")
+            qtgui.util.check_set_qss()
+            try:
+                self.setWindowIcon(Qt.QIcon.fromTheme('gnuradio-grc'))
+            except:
+                pass
+            self.top_scroll_layout = Qt.QVBoxLayout()
+            self.setLayout(self.top_scroll_layout)
+            self.top_scroll = Qt.QScrollArea()
+            self.top_scroll.setFrameStyle(Qt.QFrame.NoFrame)
+            self.top_scroll_layout.addWidget(self.top_scroll)
+            self.top_scroll.setWidgetResizable(True)
+            self.top_widget = Qt.QWidget()
+            self.top_scroll.setWidget(self.top_widget)
+            self.top_layout = Qt.QVBoxLayout(self.top_widget)
+            self.top_grid_layout = Qt.QGridLayout()
+            self.top_layout.addLayout(self.top_grid_layout)
+    
+            self.settings = Qt.QSettings("GNU Radio", "AIS")
 
-        self.settings = Qt.QSettings("GNU Radio", "AIS")
-
-        try:
-            if StrictVersion(Qt.qVersion()) < StrictVersion("5.0.0"):
-                self.restoreGeometry(self.settings.value("geometry").toByteArray())
-            else:
-                self.restoreGeometry(self.settings.value("geometry"))
-        except:
-            pass
+            try:
+                if StrictVersion(Qt.qVersion()) < StrictVersion("5.0.0"):
+                    self.restoreGeometry(self.settings.value("geometry").toByteArray())
+                else:
+                    self.restoreGeometry(self.settings.value("geometry"))
+            except:
+                pass
 
         ##################################################
         # Variables
@@ -90,9 +92,10 @@ class AIS(gr.top_block, Qt.QWidget):
         ##################################################
         # Blocks
         ##################################################
-        self._rf_gain_range = Range(0, 50, 1, 10, 200)
-        self._rf_gain_win = RangeWidget(self._rf_gain_range, self.set_rf_gain, 'RF gain (dB)', "counter_slider", int)
-        self.top_grid_layout.addWidget(self._rf_gain_win)
+        if doGUI:
+            self._rf_gain_range = Range(0, 50, 1, 10, 200)
+            self._rf_gain_win = RangeWidget(self._rf_gain_range, self.set_rf_gain, 'RF gain (dB)', "counter_slider", int)
+            self.top_grid_layout.addWidget(self._rf_gain_win)
         self.zeromq_push_sink_0 = zeromq.push_sink(gr.sizeof_short, 1, zmq_address, 100, False, -1)
         self.soapy_source_0 = None
         # Make sure that the gain mode is valid
@@ -143,39 +146,39 @@ class AIS(gr.top_block, Qt.QWidget):
             # pass is needed, in case the template does not evaluare anything
             pass
             self.soapy_source_0.set_gain(0,rf_gain)
-        self.qtgui_waterfall_sink_x_0 = qtgui.waterfall_sink_c(
-            2048, #size
-            firdes.WIN_HAMMING, #wintype
-            0, #fc
-            samp_rate, #bw
-            "", #name
-            1 #number of inputs
-        )
-        self.qtgui_waterfall_sink_x_0.set_update_time(0.05)
-        self.qtgui_waterfall_sink_x_0.enable_grid(False)
-        self.qtgui_waterfall_sink_x_0.enable_axis_labels(True)
+        if doGUI:
+            self.qtgui_waterfall_sink_x_0 = qtgui.waterfall_sink_c(
+                2048, #size
+                firdes.WIN_HAMMING, #wintype
+                0, #fc
+                samp_rate, #bw
+                "", #name
+                1 #number of inputs
+            )
+            self.qtgui_waterfall_sink_x_0.set_update_time(0.05)
+            self.qtgui_waterfall_sink_x_0.enable_grid(False)
+            self.qtgui_waterfall_sink_x_0.enable_axis_labels(True)
 
 
 
-        labels = ['', '', '', '', '',
-                  '', '', '', '', '']
-        colors = [0, 0, 0, 0, 0,
-                  0, 0, 0, 0, 0]
-        alphas = [1.0, 1.0, 1.0, 1.0, 1.0,
-                  1.0, 1.0, 1.0, 1.0, 1.0]
+            labels = ['', '', '', '', '',
+                      '', '', '', '', '']
+            colors = [0, 0, 0, 0, 0,
+                      0, 0, 0, 0, 0]
+            alphas = [1.0, 1.0, 1.0, 1.0, 1.0,
+                      1.0, 1.0, 1.0, 1.0, 1.0]
 
-        for i in range(1):
-            if len(labels[i]) == 0:
-                self.qtgui_waterfall_sink_x_0.set_line_label(i, "Data {0}".format(i))
-            else:
-                self.qtgui_waterfall_sink_x_0.set_line_label(i, labels[i])
-            self.qtgui_waterfall_sink_x_0.set_color_map(i, colors[i])
-            self.qtgui_waterfall_sink_x_0.set_line_alpha(i, alphas[i])
+            for i in range(1):
+                if len(labels[i]) == 0:
+                    self.qtgui_waterfall_sink_x_0.set_line_label(i, "Data {0}".format(i))
+                else:
+                    self.qtgui_waterfall_sink_x_0.set_line_label(i, labels[i])
+                self.qtgui_waterfall_sink_x_0.set_color_map(i, colors[i])
+                self.qtgui_waterfall_sink_x_0.set_line_alpha(i, alphas[i])
+            self.qtgui_waterfall_sink_x_0.set_intensity_range(-120, 0)
+            self._qtgui_waterfall_sink_x_0_win = sip.wrapinstance(self.qtgui_waterfall_sink_x_0.pyqwidget(), Qt.QWidget)
+            self.top_grid_layout.addWidget(self._qtgui_waterfall_sink_x_0_win)
 
-        self.qtgui_waterfall_sink_x_0.set_intensity_range(-120, 0)
-
-        self._qtgui_waterfall_sink_x_0_win = sip.wrapinstance(self.qtgui_waterfall_sink_x_0.pyqwidget(), Qt.QWidget)
-        self.top_grid_layout.addWidget(self._qtgui_waterfall_sink_x_0_win)
         self.freq_xlating_fft_filter_ccc_0_0 = filter.freq_xlating_fft_filter_ccc(4, xlate_taps, 25000, samp_rate)
         self.freq_xlating_fft_filter_ccc_0_0.set_nthreads(1)
         self.freq_xlating_fft_filter_ccc_0_0.declare_sample_delay(0)
@@ -188,13 +191,14 @@ class AIS(gr.top_block, Qt.QWidget):
         self.blocks_float_to_short_0 = blocks.float_to_short(1, 65536)
         self.analog_quadrature_demod_cf_0_0 = analog.quadrature_demod_cf(.3)
         self.analog_quadrature_demod_cf_0 = analog.quadrature_demod_cf(.3)
-        self._ais_string_tool_bar = Qt.QToolBar(self)
-        self._ais_string_tool_bar.addWidget(Qt.QLabel('AIS' + ": "))
-        self._ais_string_line_edit = Qt.QLineEdit(str(self.ais_string))
-        self._ais_string_tool_bar.addWidget(self._ais_string_line_edit)
-        self._ais_string_line_edit.returnPressed.connect(
-            lambda: self.set_ais_string(str(str(self._ais_string_line_edit.text()))))
-        self.top_grid_layout.addWidget(self._ais_string_tool_bar)
+        if doGUI:
+            self._ais_string_tool_bar = Qt.QToolBar(self)
+            self._ais_string_tool_bar.addWidget(Qt.QLabel('AIS' + ": "))
+            self._ais_string_line_edit = Qt.QLineEdit(str(self.ais_string))
+            self._ais_string_tool_bar.addWidget(self._ais_string_line_edit)
+            self._ais_string_line_edit.returnPressed.connect(
+                lambda: self.set_ais_string(str(str(self._ais_string_line_edit.text()))))
+            self.top_grid_layout.addWidget(self._ais_string_tool_bar)
 
 
 
@@ -211,13 +215,15 @@ class AIS(gr.top_block, Qt.QWidget):
         self.connect((self.freq_xlating_fft_filter_ccc_0_0, 0), (self.analog_quadrature_demod_cf_0_0, 0))
         self.connect((self.soapy_source_0, 0), (self.freq_xlating_fft_filter_ccc_0, 0))
         self.connect((self.soapy_source_0, 0), (self.freq_xlating_fft_filter_ccc_0_0, 0))
-        self.connect((self.soapy_source_0, 0), (self.qtgui_waterfall_sink_x_0, 0))
+        if doGUI:
+            self.connect((self.soapy_source_0, 0), (self.qtgui_waterfall_sink_x_0, 0))
 
 
     def closeEvent(self, event):
-        self.settings = Qt.QSettings("GNU Radio", "AIS")
-        self.settings.setValue("geometry", self.saveGeometry())
-        event.accept()
+        if self.doGUI:
+            self.settings = Qt.QSettings("GNU Radio", "AIS")
+            self.settings.setValue("geometry", self.saveGeometry())
+            event.accept()
 
     def get_samp_rate(self):
         return self.samp_rate
@@ -225,7 +231,8 @@ class AIS(gr.top_block, Qt.QWidget):
     def set_samp_rate(self, samp_rate):
         self.samp_rate = samp_rate
         self.set_xlate_taps(firdes.low_pass(1, self.samp_rate, 15000, 5000, firdes.WIN_HAMMING, 6.76))
-        self.qtgui_waterfall_sink_x_0.set_frequency_range(0, self.samp_rate)
+        if self.doGUI:
+            self.qtgui_waterfall_sink_x_0.set_frequency_range(0, self.samp_rate)
 
     def get_zmq_address(self):
         return self.zmq_address
@@ -253,7 +260,8 @@ class AIS(gr.top_block, Qt.QWidget):
 
     def set_ais_string(self, ais_string):
         self.ais_string = ais_string
-        Qt.QMetaObject.invokeMethod(self._ais_string_line_edit, "setText", Qt.Q_ARG("QString", str(self.ais_string)))
+        if self.doGUI:
+            Qt.QMetaObject.invokeMethod(self._ais_string_line_edit, "setText", Qt.Q_ARG("QString", str(self.ais_string)))
 
 
 

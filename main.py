@@ -42,41 +42,63 @@ def read_data(ais):
                         line = ''.join(text)
                         text = []
                         print('AIS:'+line)
-                        ais.set_ais_string(line)
+                        if ais.doGUI:
+                            ais.set_ais_string(line)
                     else:
                         text.append(c)
             except BlockingIOError:
                 pass
 
 def main():
+    # process cmdline - currently enable/disable GUI
+    doGUI = False
+    for arg in sys.argv[1:]:
+        if '-qt' == arg:
+            doGUI = True
+        else:
+            print(f'usage: {sys.argv[0]} [-qt]')
+            sys.exit(0)
+
     # duplicated from AIS.main - but with our threading bits included
-    qapp = Qt.QApplication(sys.argv)
-    tb = AIS.AIS()
+    if doGUI:
+        qapp = Qt.QApplication(sys.argv)
+    tb = AIS.AIS(doGUI)
     tb.start()
-    tb.show()
+    if doGUI:
+        tb.show()
+
+    def quitting():
+        tb.stop()
+        if doGUI:
+            tb.wait()
+        run_reader.set()
+        thr.join()
 
     def sig_handler(sig=None, frame=None):
-        Qt.QApplication.quit()
+        if doGUI:
+            Qt.QApplication.quit()
+        else:
+            quitting()
+            sys.exit(0)
 
     signal.signal(signal.SIGINT, sig_handler)
     signal.signal(signal.SIGTERM, sig_handler)
 
-    timer = Qt.QTimer()
-    timer.start(500)
-    timer.timeout.connect(lambda: None)
-
-    def quitting():
-        tb.stop()
-        tb.wait()
-
-    qapp.aboutToQuit.connect(quitting)
+    if doGUI:
+        timer = Qt.QTimer()
+        timer.start(500)
+        timer.timeout.connect(lambda: None)
+        qapp.aboutToQuit.connect(quitting)
 
     # wait 2 seconds before starting reader to allow zmq socket to be created
     thr = threading.Timer(2, read_data, args=[tb])
     thr.start()
-    qapp.exec_()
-    run_reader.set()
-    thr.join()
+    if doGUI:
+        qapp.exec_()
+    else:
+        print('Press <Return> to terminate')
+        sys.stdin.readline()
+        quitting()
 
 if __name__ == '__main__':
     main()
